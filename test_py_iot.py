@@ -2,6 +2,7 @@
 from devicehub.devicehub import Sensor, Actuator, Device, Project
 from random import randint
 from time import sleep
+import RPI.GPIO as GPIO
 
 
 PROJECT_ID = '8470'
@@ -43,4 +44,5 @@ device.addActuator(switch, on_switch)
 
 print("Device initialized successfully")
 # log.addValue('Device initialized successfully.')
+
 
