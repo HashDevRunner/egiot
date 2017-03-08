@@ -3,14 +3,18 @@ import time
 import RPi.GPIO as GPIO
 
 TOPIC_1 = 'Floodlight1'
-FLOODLIGHT_PIN = 02
+FLOODLIGHT_PIN = 23
 
 TOPIC_2 = 'Garagelight'
-GARAGELIGHT_PIN = 03 
+GARAGELIGHT_PIN = 24 
 GPIO.setmode(GPIO.BCM)
+ON = 0
+OFF = 1
 
 GPIO.setup(FLOODLIGHT_PIN, GPIO.OUT)
 GPIO.setup(GARAGELIGHT_PIN, GPIO.OUT) 
+GPIO.output(FLOODLIGHT_PIN, OFF)
+GPIO.output(GARAGELIGHT_PIN, OFF)
 
 print("Raspberry IoT initialized...")
 
@@ -21,9 +25,9 @@ print("Raspberry IoT initialized...")
 def send_command(pin, msg):
   print "Sending PIN#" + str(pin) + " command: " + msg
   if( msg == '1'):
-    GPIO.output(pin, 1)
+    GPIO.output(pin, ON)
   else:
-    GPIO.output(pin, 0)
+    GPIO.output(pin, OFF)
 
 def on_disconnect(client, userdata, rc):
   print "Client disconnected..."
