@@ -1,5 +1,6 @@
 import paho.mqtt.client as mqtt
 from datetime import datetime as dt
+from datetime import timedelta as delta
 import RPi.GPIO as GPIO
 import time
 
@@ -19,17 +20,35 @@ STATUS_TOPIC = 'e5dfe1bd77/status'
 
 GPIO.setup(FLOODLIGHT_PIN, GPIO.OUT)
 GPIO.setup(GARAGELIGHT_PIN, GPIO.OUT) 
-#GPIO.output(FLOODLIGHT_PIN, OFF)
-#GPIO.output(GARAGELIGHT_PIN, OFF)
-
 GPIO.setwarnings(False)
 
-time_off = time.strptime("06:00","%H:%M")
-time_on = time.strptime("18:00","%H:%M")
+#-------------------------------------------
+# Adjust times here
+#-------------------------------------------
+TIME_ON = "18:00"
+TIME_OFF = "05:30"
+
+time_off = time.strptime(TIME_OFF,"%H:%M")
+time_on = time.strptime(TIME_ON,"%H:%M")
 time_mid = time.strptime("00:00","%H:%M")
 
-now = dt.now().strftime("%H:%M")
-time_now = time.strptime(now,"%H:%M")
+#determine ON and OFF times
+dt_now = dt.now()
+
+#Uncomment for testing
+#TIME_NOW_TEST = "05:31"
+#time_now_test = time.strptime(TIME_NOW_TEST,"%H:%M")
+#dt_now = dt.now().replace(hour=time_now_test.tm_hour, minute=time_now_test.tm_min) + delta(days = 1)
+
+dt_time_on = dt_now.replace(hour=time_on.tm_hour, minute=time_on.tm_min)
+if(dt_now >= dt_time_on):
+  dt_time_off = (dt_now + delta(days = 1)).replace(hour=time_off.tm_hour, minute=time_off.tm_min)
+else:
+  dt_time_off = dt_now.replace(hour=time_off.tm_hour, minute=time_off.tm_min)
+
+print("Time now: " + dt_now.strftime("%m/%d %H:%M"))
+print("Time on: " + dt_time_on.strftime("%m/%d %H:%M"))
+print("Time off: " + dt_time_off.strftime("%m/%d %H:%M"))
 
 #initialize mqtt
 client = mqtt.Client()
@@ -38,19 +57,28 @@ try:
 except:
   client.connect("broker.hivemq.com", 1883, 60)
 
-#execute PIN requests
-print("Raspberry time auto: " + now)
-#turn on from 6PM to 6AM
-if (time_now > time_on) or (time_now > time_mid and time_now < time_off): 
-  print("Turning ON...")
+def turn_on():
   GPIO.output(GARAGELIGHT_PIN, ON)
-  client.publish(LOG_TOPIC,'PI: ' + now+ '- status:ON')
+  client.publish(LOG_TOPIC, dt_now.strftime("%m/%d %H:%M") + '- status:ON')
 
-elif time_now > time_off :
-#turn off from 6AM to 6PM
-  print("Turning OFF...")
+def turn_off():
   GPIO.output(GARAGELIGHT_PIN, OFF)
-  client.publish(LOG_TOPIC,'PI: ' + now + '- status:OFF')
+  client.publish(LOG_TOPIC, dt_now.strftime("%m/%d %H:%M") + '- status:OFF')
+
+#-------------------------------------------
+# MAIN LOGIC HERE!!! 
+# turn on from 6pm to 5:30am
+#-------------------------------------------
+if(dt_now >= dt_time_on or dt_now < dt_time_off):
+  print("Turning ON...")
+  turn_on()
+
+elif( dt_now >= dt_time_off):
+  print("Turning OFF...")
+  turn_off()
+
+else:
+  print("why i'm on else???")
 
 client.disconnect()
 
